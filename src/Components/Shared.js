@@ -1,0 +1,17 @@
+import React from 'react';
+export const moneda = n => new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(n)||0);
+export function Aviso({mensaje,tipo='danger'}) {return mensaje ? <div className={`alert alert-${tipo}`} role="alert">{mensaje}</div> : null;}
+export function Encabezado({titulo,detalle,children}) {return <header className="section-header"><div><h1>{titulo}</h1>{detalle&&<p>{detalle}</p>}</div>{children}</header>;}
+export function Campo({nombre,children}) {return <label className="form-label d-block mb-3"><span className="d-block mb-1">{nombre}</span>{children}</label>;}
+export function Modal({titulo,onCerrar,children,ancho=''}) {
+  const ref=React.useRef(null);
+  React.useEffect(()=>{
+    const anterior=document.activeElement;const old=document.body.style.overflow;document.body.style.overflow='hidden';ref.current?.focus();
+    const key=e=>{if(e.key==='Escape')onCerrar();if(e.key==='Tab'){const els=[...ref.current.querySelectorAll('button,input,select,a[href],[tabindex="0"]')].filter(el=>!el.disabled);if(!els.length){e.preventDefault();return;}const first=els[0],last=els[els.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===ref.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};
+    document.addEventListener('keydown',key);return()=>{document.removeEventListener('keydown',key);document.body.style.overflow=old;anterior?.focus();};
+  },[onCerrar]);
+  return <div className="modal-layer"><section ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={titulo} className={`modal-box ${ancho}`}><div className="d-flex justify-content-between align-items-center mb-3 no-print"><h2 className="h5 mb-0">{titulo}</h2><button className="btn-close" aria-label="Cerrar" onClick={onCerrar}/></div>{children}</section></div>;
+}
+export function Ticket({venta,onCerrar}) {
+ return <Modal titulo="Comprobante de venta" onCerrar={onCerrar} ancho="ticket-modal"><div className="ticket-print"><h2 className="h5 text-center">AutoPart POS</h2><p className="text-center small">Refaccionaria Nexus Flow<br/>Comprobante interno</p><p className="small">{venta.folio}<br/>{venta.fechaISO?new Date(venta.fechaISO).toLocaleString('es-MX'):`${venta.fecha} ${venta.hora}`}<br/>Atendió: {venta.cajero}<br/>{venta.estado}</p><table className="table table-sm"><thead><tr><th>Cant.</th><th>Descripción</th><th className="text-end">Importe</th></tr></thead><tbody>{venta.items.map((i,n)=><tr key={`${i.codigo}-${n}`}><td>{i.cantidad}</td><td>{i.descripcion}</td><td className="text-end">{moneda(i.subtotal??Number(i.precioVenta)*i.cantidad)}</td></tr>)}{venta.manoObra>0&&<tr><td>1</td><td>Mano de obra</td><td className="text-end">{moneda(venta.manoObra)}</td></tr>}</tbody></table><div className="text-end small">Subtotal: {moneda(venta.subtotal)}<br/>IVA: {moneda(venta.iva)}<br/><strong className="fs-5">Total: {moneda(venta.total)}</strong><br/>{venta.metodoPago}{venta.metodoPago==='Efectivo'&&<><br/>Recibido: {moneda(venta.pagadoCon)}<br/>Cambio: {moneda(venta.cambio)}</>}</div><p className="text-center small mt-3">Gracias por tu compra.<br/>Este comprobante no es una factura fiscal.</p></div><div className="no-print d-flex gap-2 mt-3"><button className="btn btn-primary" onClick={()=>window.print()}>Imprimir / Guardar PDF</button><button className="btn btn-outline-secondary" onClick={onCerrar}>Cerrar</button></div></Modal>;
+}
